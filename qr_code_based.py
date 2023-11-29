@@ -1,5 +1,4 @@
 import cv2
-from pyzbar.pyzbar import decode
 
 def scan_qr_code():
     # Open the default camera (you can change the parameter to use a different camera)
@@ -39,5 +38,5 @@ def scan_qr_code():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    qr_data = scan_qr_code()
-    print("Program terminated.")
+    grades = [95,95,95,95,90,95,90,90,95,90,90,90,95,95,90,90,90,95,95]
+    print(sum(grades)/len(grades))
