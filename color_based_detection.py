@@ -37,7 +37,7 @@ class Color:
     def get_color_mask(self, image: np.array):
         frame_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         return cv2.inRange(frame_hsv, self.lower_bound, self.upper_bound)
-
+    
 class CombinedMask(Color):
     def __init__(self, lower_bound: list[int], upper_bound: list[int], c1: Color, c2: Color) -> None:
         super().__init__(lower_bound, upper_bound)
@@ -47,11 +47,12 @@ class CombinedMask(Color):
     def get_color_mask(self, image: np.array):
         return cv2.bitwise_or(self.color1.get_color_mask(image), self.color2.get_color_mask(image))
 
-color_blue:Color = Color([106,50,50],[118,255,255])
-color_green:Color = Color([53,0,150],[60,100, 255])
-color_red_1:Color = Color([0,80,80], [5,255,255])
-color_red_2:Color = Color([175,80,80], [180,255,255])
-color_red: Color = CombinedMask([],[],color_red_1, color_red_2)
+color_blue:Color = Color([106,50,50],[110,255,255])
+color_red_1:Color = Color([0,50,80], [5,255,255])
+color_red_2:Color = Color([165,50,80], [178,255,255])
+color_red: Color = CombinedMask([0,80,80], [5,255,255],color_red_1, color_red_2)
+
+color_dictionary: dict[str, Color] = {'Red':color_red, 'Blue':color_blue}
 
 frame_hsv: np.array = None
 
@@ -80,52 +81,36 @@ def color_search(num_seconds: int) -> None:
         ret, frame = cap.read()
 
         global frame_hsv
-        frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)        
 
-        # Display the frame
-        cv2.imshow('Color isolation red', color_red.filter_image(frame))
-        cv2.imshow('Color isolation blue', color_blue.filter_image(frame))
-        cv2.imshow('Color isolation green', color_green.filter_image(frame))
-        
-        
+        for index, color_str in enumerate(color_dictionary):
+            cv2.imshow('Color isolation '+str(color_str), color_dictionary[color_str].filter_image(frame))
+            percentage_val = color_dictionary[color_str].get_color_percentage(frame)
+            frame = cv2.putText(frame, str(color_str)+':'+str(percentage_val), (50, 100+(50*index)), cv2.FONT_HERSHEY_SIMPLEX,  
+                         1, (0,0,0), 2, cv2.LINE_AA)
 
-        # Using cv2.putText() method 
-        red_val:float = color_red.get_color_percentage(frame)
-        blue_val:float = color_blue.get_color_percentage(frame)
-        green_val:float = color_green.get_color_percentage(frame)
-        image = cv2.putText(frame, 'Red: '+str(red_val), (50, 50), cv2.FONT_HERSHEY_SIMPLEX,  
-                        1, (0, 0, 255), 2, cv2.LINE_AA) 
-        image = cv2.putText(image, 'Green: '+str(blue_val), (50, 200), cv2.FONT_HERSHEY_SIMPLEX,  
-                        1, (0, 255, 0), 2, cv2.LINE_AA) 
-        image = cv2.putText(image, 'Blue: '+str(green_val), (50, 400), cv2.FONT_HERSHEY_SIMPLEX,  
-                        1, (255, 0, 0), 2, cv2.LINE_AA) 
         cv2.imshow('Main', frame)
 
         
         #print(color_test.get_color_percentage(frame))
         # Check for the 'q' key to exit the loop and terminate the program
         if cv2.waitKey(1) & 0xFF == ord('q') or time.time() - start_time > num_seconds and num_seconds != -1:
-            print(find_max_arg_name(red_val, green_val, blue_val))
+            print(calc_max_color(color_dictionary, frame))
             break
 
     # Release the camera
     cap.release()
     cv2.destroyAllWindows()
 
-def find_max_arg_name(a, b, c):
-    # Create a dictionary with argument names as keys and values as arguments
-    args_dict = {'Red': a, 'Green': b, 'Blue': c}
-
-    # Find the argument name with the maximum value
-    max_arg_name = max(args_dict, key=args_dict.get)
-    max_value = args_dict[max_arg_name]
-
-    return max_arg_name
-
-
-
-    
+def calc_max_color(colors:dict[str, Color], image:np.array):
+    max_key = None 
+    max_value = 0.02
+    for str, color in colors.items():
+        if color.get_color_percentage(image) > max_value:
+            max_value = color.get_color_percentage(image)
+            max_key = str
+    return max_key
 
 if __name__ == "__main__":
-    qr_data = color_search(10)
+    qr_data = color_search(-1)
     print("Program terminated.")
