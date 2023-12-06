@@ -71,8 +71,9 @@ def build_color_dictionary() -> dict[str, Color]:
             color_dictionary[df['Color_name'][ind]] = CombinedMask([],[], c1, c2)
     #delete all colros that are only parts
     for ind in df.index: 
-        if (df['is_full_color'][ind] == 'False'):
-            del color_dictionary[df['Color_name'][ind]]
+        if (df['is_full_color'][ind] == False):
+            print(df['is_full_color'][ind])
+            color_dictionary.pop(df['Color_name'][ind])
     return color_dictionary
 
 
