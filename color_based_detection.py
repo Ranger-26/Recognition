@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import pandas as pd
 import time
 
 start_time = time.time()
@@ -47,12 +48,41 @@ class CombinedMask(Color):
     def get_color_mask(self, image: np.array):
         return cv2.bitwise_or(self.color1.get_color_mask(image), self.color2.get_color_mask(image))
 
-color_blue:Color = Color([106,50,50],[110,255,255])
-color_red_1:Color = Color([0,50,80], [5,255,255])
-color_red_2:Color = Color([165,50,80], [178,255,255])
+def build_color_dictionary() -> dict[str, Color]:
+    df: pd.DataFrame = pd.read_csv('color_config.csv')
+    color_dictionary: dict[str, Color] = {}
+    color_list = []
+    #add all colors in that are not combined colors
+    for ind in df.index:
+        if df['combined_colors'][ind] == 'Nan':
+            color_dictionary[df["Color_name"][ind]] = Color([df['H_min'][ind], df['S_min'][ind], df['V_min'][ind]],
+                                                 [df['H_max'][ind], df['S_max'][ind], df['V_max'][ind]])
+    #add all the combined colors in
+    for ind in df.index: 
+        if df['combined_colors'][ind] != 'Nan':
+            colors:str = df["combined_colors"][ind]
+            colors_split:list[str] = colors.split(',')
+            colors_split[0] = colors_split[0].strip()
+            colors_split[1] = colors_split[1].strip()
+            print(colors_split)
+            c1: Color = color_dictionary[colors_split[0]]
+
+            c2: Color = color_dictionary[colors_split[1]]
+            color_dictionary[df['Color_name'][ind]] = CombinedMask([],[], c1, c2)
+    #delete all colros that are only parts
+    for ind in df.index: 
+        if (df['is_full_color'][ind] == 'False'):
+            del color_dictionary[df['Color_name'][ind]]
+    return color_dictionary
+
+
+color_blue:Color = Color([106,50,50],[114,255,255])
+color_red_1:Color = Color([0,50,80], [4,255,255])
+color_red_2:Color = Color([165,70,80], [178,255,255])
 color_red: Color = CombinedMask([0,80,80], [5,255,255],color_red_1, color_red_2)
 
-color_dictionary: dict[str, Color] = {'Red':color_red, 'Blue':color_blue}
+#color_dictionary: dict[str, Color] = {'Red':color_red, 'Blue':color_blue}
+color_dictionary = build_color_dictionary()
 
 frame_hsv: np.array = None
 
