@@ -6,11 +6,11 @@ import time
 start_time = time.time()
 
 class Color:
-    def __init__(self, lower_bound:list[int], upper_bound: list[int]) -> None:
+    def __init__(self, lower_bound, upper_bound) -> None:
         self.lower_bound: np.array = np.array(lower_bound, dtype = "uint8")
         self.upper_bound: np.array =  np.array(upper_bound, dtype = "uint8")
 
-    def filter_image(self, image_src:np.array) -> np.array:
+    def filter_image(self, image_src) -> np.array:
         #create a color mask for the cones
         color_mask = self.get_color_mask(image_src)
         color_mask = cv2.erode(color_mask, np.ones((3, 3), np.uint8), iterations = 1)
@@ -22,7 +22,7 @@ class Color:
         #combined = cv2.bitwise_or(frame_filter, frame_filter_2)
         return frame_filter_2
 
-    def get_color_percentage(self, image: np.array) -> float:
+    def get_color_percentage(self, image) -> float:
         color_mask = self.get_color_mask(image)
 
         # Calculate the total number of pixels in the image
@@ -35,12 +35,12 @@ class Color:
 
         return color_percentage
 
-    def get_color_mask(self, image: np.array):
+    def get_color_mask(self, image):
         frame_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         return cv2.inRange(frame_hsv, self.lower_bound, self.upper_bound)
     
 class CombinedMask(Color):
-    def __init__(self, lower_bound: list[int], upper_bound: list[int], c1: Color, c2: Color) -> None:
+    def __init__(self, lower_bound, upper_bound, c1: Color, c2: Color) -> None:
         super().__init__(lower_bound, upper_bound)
         self.color1:Color = c1
         self.color2: Color = c2
@@ -48,7 +48,7 @@ class CombinedMask(Color):
     def get_color_mask(self, image: np.array):
         return cv2.bitwise_or(self.color1.get_color_mask(image), self.color2.get_color_mask(image))
 
-def build_color_dictionary() -> dict[str, Color]:
+def build_color_dictionary():
     df: pd.DataFrame = pd.read_csv('color_config.csv')
     color_dictionary: dict[str, Color] = {}
     color_list = []
@@ -104,9 +104,6 @@ def color_search(num_seconds: int) -> None:
     # Open the default camera (you can change the parameter to use a different camera)
     cap = cv2.VideoCapture(0)
 
-    # Create a QR code scanner object
-    qr_code_scanner = cv2.QRCodeDetector()
-
     while True:
         # Read a frame from the camera
         ret, frame = cap.read()
@@ -133,7 +130,7 @@ def color_search(num_seconds: int) -> None:
     cap.release()
     cv2.destroyAllWindows()
 
-def calc_max_color(colors:dict[str, Color], image:np.array):
+def calc_max_color(colors, image:np.array):
     max_key = None 
     max_value = 0.02
     for str, color in colors.items():
@@ -143,5 +140,5 @@ def calc_max_color(colors:dict[str, Color], image:np.array):
     return max_key
 
 if __name__ == "__main__":
-    qr_data = color_search(-1)
+    color_search(-1)
     print("Program terminated.")
